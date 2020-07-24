@@ -114,12 +114,12 @@ static char reported_property_payload[128];
 
 // PnP Device Values
 static bool max_temp_changed = false;
-static int32_t current_device_temp = DEFAULT_START_TEMP_CELSIUS;
-static int32_t device_temperature_avg_total = DEFAULT_START_TEMP_CELSIUS;
-static uint32_t device_temperature_avg_count = 1;
-static int32_t device_max_temp = DEFAULT_START_TEMP_CELSIUS;
-static int32_t device_min_temp = DEFAULT_START_TEMP_CELSIUS;
-static int32_t device_avg_temp = DEFAULT_START_TEMP_CELSIUS;
+static int32_t current_device_temp;
+static int32_t device_temperature_avg_total;
+static uint32_t device_temperature_avg_count = 0;
+static int32_t device_max_temp;
+static int32_t device_min_temp;
+static int32_t device_avg_temp;
 
 // Create request id span which increments source int each call. Capable of holding 8 digit number.
 static az_span get_request_id(void)
@@ -511,9 +511,10 @@ static int send_reported_temperature_property(
   return rc;
 }
 
-static void update_device_temp(int32_t temp)
+static void update_device_temp(void)
 {
-  current_device_temp = temp;
+  int16_t temp = SENSORS_getTempValue();
+  current_device_temp = (int)(temp / 100);
 
   bool ret = false;
   if (current_device_temp > device_max_temp)
@@ -560,7 +561,6 @@ static void handle_twin_message(
       else
       {
         send_reported_temperature_property(desired_temp, version_num, false);
-        update_device_temp(desired_temp);
       }
       break;
     // An update to the desired properties with the properties as a JSON payload.
@@ -576,7 +576,6 @@ static void handle_twin_message(
         break;
       }
       send_reported_temperature_property(desired_temp, version_num, false);
-      update_device_temp(desired_temp);
 
       break;
 
@@ -672,6 +671,8 @@ static int send_telemetry_message(void)
     return rc;
   }
 
+  update_device_temp();
+
   az_span telemetry_payload_span;
   if (az_failed(rc = build_telemetry_message(&telemetry_payload_span)))
   {
@@ -679,7 +680,7 @@ static int send_telemetry_message(void)
     return rc;
   }
 
-  debug_printInfo("Sending Telemetry Message");
+  debug_printInfo("Sending Telemetry Message: temp %d", (int)current_device_temp);
   rc = mqtt_publish_message(telemetry_topic, telemetry_payload_span, 0);
 
   return rc;
@@ -700,6 +701,8 @@ int main(void)
 	// initialize the device
 	SYSTEM_Initialize();
 	application_init();
+
+  update_device_temp();
 
 #ifdef CFG_MQTT_PROVISIONING_HOST
     application_cloud_mqtt_connect(CFG_MQTT_PROVISIONING_HOST, &pf_mqtt_iotprovisioning_client);
