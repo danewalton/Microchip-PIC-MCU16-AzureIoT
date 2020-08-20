@@ -68,7 +68,7 @@ extern char sas_token_buf[512];
 //uint8_t device_id_buf[100];
 //az_span device_id;
 az_iot_provisioning_client provisioning_client;
-static const char* sas_token_buf2 = "SharedAccessSignature sr=0ne000CDA9E%2fregistrations%2f01233EAD58E86797FE&sig=eQj1TKIJ%2banv098IiGXmAJcm8mlXxp1HTkcUDPgKX44%3d&se=1590923226&skn=registration";
+static const char* sas_token_buf2 = "INSERT KEY HERE";
 static const char* username_buf2 = "0ne000CDA9E/registrations/01233EAD58E86797FE/api-version=2019-03-31";
     
 /** \brief MQTT publish handler call back table.
